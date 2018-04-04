@@ -30,8 +30,8 @@ import io.github.jhipster.jdl.jdl.JdlStringFieldType
 /**
  * @author Serano Colameo - Initial contribution and API
  */
-class JdlHelper {
-
+class JdlTypeHelper {
+	
 	def static String getTypeName(JdlFieldType it) {
 		return switch (it) {
 			JdlEntityType: element.name

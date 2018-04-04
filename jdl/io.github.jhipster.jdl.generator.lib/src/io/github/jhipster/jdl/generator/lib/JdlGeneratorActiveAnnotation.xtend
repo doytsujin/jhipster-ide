@@ -32,6 +32,8 @@ import io.github.jhipster.jdl.jdl.JdlDomainModel
 import java.nio.file.Path
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl
 import org.eclipse.emf.common.util.EList
+import io.github.jhipster.jdl.generator.lib.helper.JdlTypeHelper
+import org.apache.log4j.Logger
 
 /**
  * Extracts an interface for all locally declared public methods.
@@ -49,27 +51,43 @@ annotation JdlGeneratorAnnotation {
 class JdlGeneratorProcessor extends AbstractClassProcessor {
 
 	override doTransform(MutableClassDeclaration clazz, extension TransformationContext context) {
+		clazz.addField('logger', [
+			it.static = true
+			it.type = Logger.newTypeReference
+			it.initializer = '''«Logger.newTypeReference».getLogger(«clazz.simpleName».class)'''
+			primarySourceElement = clazz
+		])
+		
+		clazz.addField('typeHelper', [
+			it.type = JdlTypeHelper.newTypeReference
+			it.initializer = '''new «JdlTypeHelper.newTypeReference»()'''
+			primarySourceElement = clazz
+		])
 		
 		clazz.addConstructor[
 			body = '''
 				init();
 			'''
+			primarySourceElement = clazz
 		]
+		
 		clazz.addMethod('init', [
 			body = '''
 				try {
 					new io.github.jhipster.jdl.JDLStandaloneSetup().createInjectorAndDoEMFRegistration();
 				} catch (Exception ex) {
-					new «IllegalStateException.newTypeReference»("Could not initialize standalone setup!", ex);
+					String msg = "Could not initialize standalone setup!";
+					logger.error(msg, ex);
+					new «IllegalStateException.newTypeReference»(msg, ex);
 				}
 			'''
 		]) => [
 			it.final = true
 			it.visibility = Visibility.PRIVATE
+			primarySourceElement = it
 		]
 		
 		clazz.addMethod('load', [
-			primarySourceElement = it
 			visibility = Visibility.PUBLIC
 			addParameter('jdlFilePath', Path.newTypeReference)
 			static = true
@@ -81,6 +99,7 @@ class JdlGeneratorProcessor extends AbstractClassProcessor {
 				return (element instanceof JdlDomainModel) ? ((JdlDomainModel) element) : null;
 			'''
 			returnType = JdlDomainModel.newTypeReference
+			primarySourceElement = it
 		])
 	}
 }
